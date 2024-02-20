@@ -7,8 +7,18 @@ import SignUpForm from "./pages/auth/SignUpForm";
 import SignInForm from "./pages/auth/SignInForm";
 import PostCreateForm from "./pages/posts/PostCreateForm";
 import PostPage from "./pages/posts/PostPage";
+import PostsPage from "./pages/posts/PostsPage";
+import { useCurrentUser } from "./contexts/CurrentUserContext";
 
 function App() {
+  // Before we create the routes, we need to know who the currentUser is so we can
+  // return the posts they liked, and the ones by profiles they follow
+  const currentUser = useCurrentUser();
+  // we need their profile_id to know whose profile_id to filter teh posts by. In case
+  // the current user's details are still being fetched in the background, it will default to
+  // an empty string.
+  const profile_id = currentUser?.profile_id || "";
+
   return (
         // The styles object here relates to the name we gave our import at the top and the .App 
         // relates to the .APP class we set in our css File. Now all the properties we created for 
@@ -23,7 +33,33 @@ function App() {
             The exact prop tells the route to only render its component when teh url entered is exactly
             the same. */}
             <Switch>
-              <Route exact path="/" render={() => <h1>Home page</h1>} />
+              <Route 
+                exact 
+                path="/" 
+                render={() => (
+                  <PostsPage message="No results found. Adjust the search keyword." />
+                )}
+              />
+              <Route 
+                exact 
+                path="/feed" 
+                render={() => (
+                  <PostsPage 
+                    message="No results found. Adjust the search keyword or follow a user."
+                    filter={`owner__followed__owner__profile=${profile_id}&`} 
+                  />
+                )} 
+              />
+              <Route 
+                exact 
+                path="/liked" 
+                render={() => (
+                  <PostsPage 
+                    message="No results found. Adjust the search keyword or like a post."
+                    filter={`likes__owner__profile=${profile_id}&ordering=-likes__created_at&`}
+                  />
+                )}
+              />
               <Route exact path="/signin" render={() => <SignInForm />} />
               <Route exact path="/signup" render={() => <SignUpForm />} />
               <Route exact path="/posts/create" render={() => <PostCreateForm />} />
