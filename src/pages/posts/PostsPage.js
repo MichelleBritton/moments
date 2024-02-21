@@ -12,6 +12,8 @@ import styles from "../../styles/PostsPage.module.css";
 import { useLocation } from "react-router";
 import {axiosReq} from '../../api/axiosDefaults';
 import NoResults from "../../assets/no-results.png";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { fetchMoreData } from "../../utils/utils";
 
 // Destructure the message and filter props in place, setting the filter to an empty string
 function PostsPage({ message, filter="" }) {
@@ -29,6 +31,9 @@ function PostsPage({ message, filter="" }) {
     // is on. We need to know this to detect if the user has flicked between home, feed and likes pages
     const {pathname} = useLocation();
 
+    // To handle the search query, we'll use the useState hook to destructure our query variable and setQuery function
+    const [query, setQuery] = useState("");
+
     // We now need to take care of the API request to fetch our opsts, we'll only show posts relevant to that filter
     // or show a loading icon when necessary.
     useEffect(() => {
@@ -38,7 +43,8 @@ function PostsPage({ message, filter="" }) {
                 // routes. It will tell the API if we want to see all the posts, just posts by the profiles our user has 
                 // following, or just the posts they have liked. If there's no error, we'll setPOsts to the newly fetch data
                 // and set teh hasLoaded variable to true, so that the spinner is no longer displayed
-                const {data} = await axiosReq.get(`/posts/?${filter}`);
+                // we can also add a new parameter to our api request to include the query text from the search box
+                const {data} = await axiosReq.get(`/posts/?${filter}search=${query}`);
                 setPosts(data);
                 setHasLoaded(true);
             } catch(err){
@@ -47,16 +53,37 @@ function PostsPage({ message, filter="" }) {
         };
 
         setHasLoaded(false);
-        fetchPosts();
+
+        // Create a time so that when using the search form the page isn't rendered after each keystroke
+        const timer = setTimeout(() => {
+            fetchPosts();
+        }, 1000);
+        // Provide a cleanup function so that no timers are left behind
+        return () => {
+            clearTimeout(timer);
+        };
+
         // We should run this code every time the filter or pathname change, so we need to put these inside teh useEffect's dependancy array
         // As teh code will run every time either of these two values change, we'll also have to setHasLoaded to false before we fetch the posts, so that
         // our loading spinner will be displayed to users.
-    }, [filter, pathname]);
+        // and also add our query to the dependency array so that a new request is only made each time our user changes their search text
+    }, [filter, query, pathname]);
 
     return (
         <Row className="h-100">
         <Col className="py-2 p-0 p-lg-2" lg={8}>
             <p>Popular profiles mobile</p>
+            <i className={`fas fa-search ${styles.SearchIcon}`} />
+            <Form className={styles.SearchBar} onSubmit={(event) => event.preventDefault()}>
+                <Form.Control 
+                    value={query} 
+                    onChange={(event) => setQuery(event.target.value)} 
+                    type="text" 
+                    className="mr-sm-2" 
+                    placeholder="Search Posts" 
+                />
+            </Form>
+
             {/* A nested ternary to display our posts once we have loaded them */}
             {/* First check if the data has been loaded, if it hasn't we will show our loading spinner */}
             {hasLoaded ? (
@@ -64,14 +91,25 @@ function PostsPage({ message, filter="" }) {
                 <>
                     {/* Check if the results array in our state has a length, if so, show our posts here by mapping over the posts. If not, we'll show no results message */}
                     {/* Map over the posts.results array, return the Post component, give it a key, spread the post object and pass the setPOsts function so that the users can like and unlike posts */}
-                    {posts.results.length
-                        ? posts.results.map((post) => (
-                            <Post key={post.id} {...post} setPosts={setPosts} />
-                        ))
-                        : <Container className={appStyles.Content}>
-                            <Asset src={NoResults} message={message} />
-                        </Container>
-                    }
+                    {posts.results.length ? (
+                        <InfiniteScroll 
+                            children={
+                                posts.results.map((post) => (
+                                    <Post key={post.id} {...post} setPosts={setPosts} />
+                                ))
+                            }
+                            dataLength={posts.results.length}
+                            loader={<Asset spinner />}
+                            // !! operator returns true or false
+                            hasMore={!!posts.next}
+                            // This prop accepts a function that will be called to load the next page of results if the hasMore prop is true
+                            next={() => {fetchMoreData(posts, setPosts)}}
+                        />                        
+                        ) : (
+                            <Container className={appStyles.Content}>
+                                <Asset src={NoResults} message={message} />
+                            </Container>
+                    )}
                 </>
             ) : (
                 <Container className={appStyles.Content}>
