@@ -5,9 +5,14 @@ import Row from "react-bootstrap/Row";
 import Container from "react-bootstrap/Container";
 
 import appStyles from "../../App.module.css";
+
 import { useParams } from "react-router";
+
 import { axiosReq } from "../../api/axiosDefaults";
 import Post from "./Post";
+import CommentCreateForm from "../comments/CommentCreateForm";
+import { useCurrentUser } from "../../contexts/CurrentUserContext";
+import Comment from "../comments/Comment";
 
 function PostPage() {
     // The way to access url parameters using the react router library is to use and auto-import the useParams hook and destructure it in place
@@ -19,6 +24,10 @@ function PostPage() {
     // that contain an empty array of results, that way we can always operate on the results array regardless of whether we get a single post object or an array of posts
     const [post, setPost] = useState({results: []});
 
+    const currentUser = useCurrentUser();
+    const profile_image = currentUser?.profile_image;
+    const [comments, setComments] = useState({ results: [] });
+
     // Fetch the post on mount and as we're about to make a network request, create a try/catch block too
     useEffect(() => {
         const handleMount = async () => {
@@ -27,11 +36,12 @@ function PostPage() {
                 // Here we are destructuring the data property returned from teh API and renaming it to post, renaming an object key is another nice destructuring feature, allowing
                 // us to give our variable a more meaningful name.  What Promise.all does is it accepts an array of promises and gets resolved when all the promises get resolved, returning
                 // an array of data. If any of the promises in the array fail, Promise.all gets rejected with an error. In this case the data returned is the post we requested
-                const [{data: post}] = await Promise.all([
+                const [{data: post}, {data: comments}] = await Promise.all([
                     axiosReq.get(`/posts/${id}`),
+                    axiosReq.get(`/comments/?post=${id}`)
                 ]);
                 setPost({results: [post]});
-                console.log(post);
+                setComments(comments);
             } catch(err){
                 console.log(err);
             }
@@ -50,7 +60,27 @@ function PostPage() {
         a value here, simply applying it means it will be returned as true inside our post component */}
         <Post {...post.results[0]} setPosts={setPost} postPage />
         <Container className={appStyles.Content}>
-          Comments
+          {currentUser ? (
+            <CommentCreateForm
+              profile_id={currentUser.profile_id}
+              profileImage={profile_image}
+              post={id}
+              setPost={setPost}
+              setComments={setComments}
+            />
+          ) : comments.results.length ? (
+            "Comments"
+          ) : null}
+          {comments.results.length ? (
+            comments.results.map(comment => (
+              // Spread the comment object so that its contents are passed as props
+              <Comment key={comment.id} {...comment} />
+            ))
+          ) : currentUser ? (
+            <span>No comments yet, be the first to comment!</span>
+          ) : (
+            <span>No comments ... yet</span>
+          )}
         </Container>
       </Col>
       <Col lg={4} className="d-none d-lg-block p-0 p-lg-2">
