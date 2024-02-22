@@ -5,14 +5,17 @@ import Row from "react-bootstrap/Row";
 import Container from "react-bootstrap/Container";
 
 import appStyles from "../../App.module.css";
-
 import { useParams } from "react-router";
-
 import { axiosReq } from "../../api/axiosDefaults";
 import Post from "./Post";
+import Comment from "../comments/Comment";
+
 import CommentCreateForm from "../comments/CommentCreateForm";
 import { useCurrentUser } from "../../contexts/CurrentUserContext";
-import Comment from "../comments/Comment";
+
+import InfiniteScroll from "react-infinite-scroll-component";
+import Asset from "../../components/Asset";
+import { fetchMoreData } from "../../utils/utils";
 
 function PostPage() {
     // The way to access url parameters using the react router library is to use and auto-import the useParams hook and destructure it in place
@@ -59,6 +62,7 @@ function PostPage() {
         {/* Spread teh post object from teh results array so that its key value pairs are passed in as props. We'll also pass the setPost function which we will use later to handle our likes. We don't need to give teh PostPage prop
         a value here, simply applying it means it will be returned as true inside our post component */}
         <Post {...post.results[0]} setPosts={setPost} postPage />
+        
         <Container className={appStyles.Content}>
           {currentUser ? (
             <CommentCreateForm
@@ -72,22 +76,35 @@ function PostPage() {
             "Comments"
           ) : null}
           {comments.results.length ? (
-            comments.results.map(comment => (
-              // Spread the comment object so that its contents are passed as props
-              <Comment key={comment.id} {...comment} />
-            ))
-          ) : currentUser ? (
-            <span>No comments yet, be the first to comment!</span>
-          ) : (
-            <span>No comments ... yet</span>
-          )}
-        </Container>
-      </Col>
-      <Col lg={4} className="d-none d-lg-block p-0 p-lg-2">
-        Popular profiles for desktop
-      </Col>
-    </Row>
-  );
-}
-
-export default PostPage;
+            <InfiniteScroll 
+              children={comments.results.map((comment) => (
+                // Spread the comment object so that its contents are passed as props
+                <Comment
+                  key={comment.id}
+                  {...comment}
+                  setPost={setPost}
+                  setComments={setComments}
+                />
+                ))}
+                dataLength={comments.results.length}
+                loader={<Asset spinner />}
+                // !! operator returns true or false
+                hasMore={!!comments.next}
+                // This prop accepts a function that will be called to load the next page of results if the hasMore prop is true
+                next={() => fetchMoreData(comments, setComments)}
+            />               
+            ) : currentUser ? (
+              <span>No comments yet, be the first to comment!</span>
+            ) : (
+              <span>No comments... yet</span>
+            )}
+          </Container>
+        </Col>
+        <Col lg={4} className="d-none d-lg-block p-0 p-lg-2">
+          Popular profiles for desktop
+        </Col>
+      </Row>
+    );
+  }
+  
+  export default PostPage;
