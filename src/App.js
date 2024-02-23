@@ -10,6 +10,10 @@ import PostEditForm from "./pages/posts/PostEditForm";
 import PostPage from "./pages/posts/PostPage";
 import PostsPage from "./pages/posts/PostsPage";
 import { useCurrentUser } from "./contexts/CurrentUserContext";
+import ProfilePage from "./pages/profiles/ProfilePage";
+import UsernameForm from "./pages/profiles/UsernameForm";
+import UserPasswordForm from "./pages/profiles/UserPasswordForm";
+import ProfileEditForm from "./pages/profiles/ProfileEditForm";
 
 function App() {
   // Before we create the routes, we need to know who the currentUser is so we can
@@ -68,6 +72,22 @@ function App() {
               
               {/* The : means that id is a parameter that can be passed through the url */}
               <Route exact path="/posts/:id" render={() => <PostPage />} />
+              <Route exact path="/profiles/:id" render ={() => <ProfilePage />} />
+              <Route
+                exact
+                path="/profiles/:id/edit/username"
+                render={() => <UsernameForm />}
+              />
+              <Route
+                exact
+                path="/profiles/:id/edit/password"
+                render={() => <UserPasswordForm />}
+              />
+              <Route
+                exact
+                path="/profiles/:id/edit"
+                render={() => <ProfileEditForm />}
+              />
               <Route render={()=> <p>Page not found!</p>} />
             </Switch>
           </Container>

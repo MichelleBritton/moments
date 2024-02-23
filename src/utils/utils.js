@@ -36,7 +36,36 @@ export const fetchMoreData = async (resource, setResource) => {
                     : [...acc, cur];
             }, prevResource.results)
         }));
-    } catch(err) {
-
-    }
+    } catch(err) {}
 };
+
+export const followHelper = (profile, clickedProfile, following_id) => {
+    return profile.id === clickedProfile.id
+    ?   // This is the profile I clicked on, update its followers count and set its following id
+        // Check if the profile in the array we're iterating over is the same one the user just clicked on. If their id's are the same, we'll return the profile object, increasting its followers_count by 1 and setting
+        // it's following_id to data.id
+        {
+            ...profile,
+            followers_count: profile.followers_count + 1,
+            following_id,
+        }
+    : profile.is_owner
+    ?   // This is the profile of the logged in user. update its following count
+        // We'll check if hte profile in the array we're iterating over is owned by the currently logged in user. If so, we'll have to increase that profile's following_count by 1, because the currently logged in user
+        // just followed a profile.
+        { ...profile, following_count: profile.following_count + 1}
+    :   // This is not the profile the user clicked on or the profile the user owns, so just return it unchanged
+        profile;                    
+}
+
+export const unfollowHelper = (profile, clickedProfile) => {
+    return profile.id === clickedProfile.id
+    ?   {
+            ...profile,
+            followers_count: profile.followers_count - 1,
+            following_id: null,
+        }
+    : profile.is_owner
+    ?   { ...profile, following_count: profile.following_count - 1}
+    :   profile;                    
+}
