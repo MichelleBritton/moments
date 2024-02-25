@@ -52,7 +52,7 @@ function PostEditForm() {
 
             is_owner ? setPostData({title, content, image}) : history.push('/');
         } catch(err) {
-            console.log(err);
+            // console.log(err);
         }
     };
 
@@ -99,7 +99,7 @@ function PostEditForm() {
         await axiosReq.put(`/posts/${id}/`, formData);
         history.push(`/posts/${id}`);
     } catch(err){
-        console.log(err);
+        // console.log(err);
         // In case there's an error with our API request, we'll log it out to the console and update the errors state variable only if the error isn't 401, as the user would
         // get redirected thanks to the interceptor logic
         if (err.response?.status !== 401){

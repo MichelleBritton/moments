@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { axiosReq, axiosRes } from "../api/axiosDefaults";
 import { useHistory } from "react-router";
+import { removeTokenTimestamp, shouldRefreshToken } from "../utils/utils";
 
 // As different pieces of UI will be displayed based on whether the user browing our site is logged in or not, this means that
 // user state and data will be used all over the application. It would be a real pain to have to pass both the currentUser variable
@@ -32,15 +33,15 @@ export const CurrentUserProvider = ({ children }) => {
           const { data } = await axiosRes.get("dj-rest-auth/user/");
           setCurrentUser(data);
         } catch (err) {
-          console.log(err);
+        //   console.log(err);
         }
       };
 
     // To have code run when a component mounts, we have to make use of the useEffect hook and pass it an empty dependency Array.
     // Now we can call teh handleMount function inside
     useEffect(() => {
-        handleMount()
-    }, [])
+        handleMount();
+    }, []);
 
     // useMemo hook is usually used to cache complex values that take time to compute. we are using it here because it runs
     // before the children components are mounted and we want to attach teh intercepts before teh children mount as that's
@@ -54,21 +55,25 @@ export const CurrentUserProvider = ({ children }) => {
     useMemo(() => {
         axiosReq.interceptors.request.use(
             async (config) => {
-                try {
-                    // Try to refresh the token before sending the request
-                    await axios.post('/dj-rest-auth/token/refresh/')
-                } catch(err){
-                    // In case that fails, and the user was previously logged in it means that the refresh token has expired
-                    // so redirect them to the signin page and set currentUser to null
-                    setCurrentUser((prevCurrentUser)=> {
-                        if (prevCurrentUser) {
-                            history.push('/signin')
-                        }
-                        return null
-                    })
-                    return config
-                }
-                return config
+                // The if block will run only if the token should be refreshed
+                if (shouldRefreshToken()){
+                    try {
+                        // Try to refresh the token before sending the request
+                        await axios.post('/dj-rest-auth/token/refresh/');
+                    } catch(err){
+                        // In case that fails, and the user was previously logged in it means that the refresh token has expired
+                        // so redirect them to the signin page and set currentUser to null
+                        setCurrentUser((prevCurrentUser)=> {
+                            if (prevCurrentUser) {
+                                history.push('/signin');
+                            }
+                            return null;
+                        });
+                        removeTokenTimestamp();
+                        return config;
+                    }
+                }                
+                return config;
             },
             (err) => {
                 return Promise.reject(err);
@@ -80,18 +85,19 @@ export const CurrentUserProvider = ({ children }) => {
             async (err) => {
                 if (err.response?.status === 401){
                     try{
-                        await axios.post('/dj-rest-auth/token/refresh/')
+                        await axios.post('/dj-rest-auth/token/refresh/');
                     } catch(err){
                         setCurrentUser(prevCurrentUser => {
                             if (prevCurrentUser){
-                                history.push('/signin')
+                                history.push('/signin');
                             }
-                            return null
-                        })
+                            return null;
+                        });
+                        removeTokenTimestamp();
                     }
-                    return axios(err.config)
+                    return axios(err.config);
                 }
-                return Promise.reject(err)
+                return Promise.reject(err);
             }
         )
     // Add a dependency array for our useMemo hook with history inside.  We want useMemo to only run once, but the linter will

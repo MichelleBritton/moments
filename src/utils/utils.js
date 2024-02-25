@@ -2,6 +2,7 @@
 // A function to pass our next prop for infinite scrolling
 // Export an async function which will accept two arguments: resource and setResource so that we can
 
+import jwtDecode from "jwt-decode";
 import { axiosReq } from "../api/axiosDefaults"
 
 // render and update different types of data for our infinite scroll component
@@ -56,7 +57,7 @@ export const followHelper = (profile, clickedProfile, following_id) => {
         { ...profile, following_count: profile.following_count + 1}
     :   // This is not the profile the user clicked on or the profile the user owns, so just return it unchanged
         profile;                    
-}
+};
 
 export const unfollowHelper = (profile, clickedProfile) => {
     return profile.id === clickedProfile.id
@@ -68,4 +69,25 @@ export const unfollowHelper = (profile, clickedProfile) => {
     : profile.is_owner
     ?   { ...profile, following_count: profile.following_count - 1}
     :   profile;                    
-}
+};
+
+// Token refresh fix
+
+// Set a token timestamp in the browser storage
+// Export and define a function call setTokenTimestamp. It will accept the data object returned by teh API on login. Then, we'll auto import and use teh jwtDecode function, to decode the refresh token. This object comes with 
+// an expiry date with a key of exp so we can save teh exp attribute to a variabled called refreshTokenTimestamp.  Finally we can save that value to the user's browser using localStorage, and set its key to refreshTokenTimestamp
+export const setTokenTimestamp = (data) => {
+    const refreshTokenTimestamp = jwtDecode(data?.refresh_token).exp;
+    localStorage.setItem("refreshTokenTimestamp", refreshTokenTimestamp);
+};
+
+// Create a function that will return a boolean value that will tell us if we should refresh the users token or not
+// Export and name is shouldRefreshToken and it will return the refreshTokenTimestamp value from our local storage, converted by the double not logical operator.  This means that the token will be refereshed only for a logged in user
+export const shouldRefreshToken = () => {
+    return !!localStorage.getItem("refreshTokenTimestamp");
+};
+
+// Finally, write a third function to remove the localStorage value if the user logs out or their refresh token has expired. So, export it and name it removeTokenTimestamp.  All it will do is remove the refreshTokenTimestamp from the localStorage
+export const removeTokenTimestamp = () => {
+    localStorage.removeItem("refreshTokenTimestamp");
+};

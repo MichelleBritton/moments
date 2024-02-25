@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import Post from './Post';
-import Asset from '../../components/Asset';
+
+import InfiniteScroll from "react-infinite-scroll-component";
 
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
@@ -9,15 +9,22 @@ import Container from "react-bootstrap/Container";
 
 import appStyles from "../../App.module.css";
 import styles from "../../styles/PostsPage.module.css";
-import { useLocation } from "react-router";
-import {axiosReq} from '../../api/axiosDefaults';
+
 import NoResults from "../../assets/no-results.png";
-import InfiniteScroll from "react-infinite-scroll-component";
+
+import { useLocation } from "react-router";
+
+import {axiosReq} from '../../api/axiosDefaults';
+import Post from './Post';
+import Asset from '../../components/Asset';
 import { fetchMoreData } from "../../utils/utils";
 import PopularProfiles from "../profiles/PopularProfiles";
+import { useCurrentUser } from "../../contexts/CurrentUserContext";
 
 // Destructure the message and filter props in place, setting the filter to an empty string
 function PostsPage({ message, filter="" }) {
+    const currentUser = useCurrentUser();
+
     // We need to store posts in an object, inside a results array that will originally be empty
     const [posts, setPosts] = useState({ results: []});
 
@@ -49,7 +56,7 @@ function PostsPage({ message, filter="" }) {
                 setPosts(data);
                 setHasLoaded(true);
             } catch(err){
-                console.log(err);
+                // console.log(err);
             }
         };
 
@@ -68,7 +75,7 @@ function PostsPage({ message, filter="" }) {
         // As teh code will run every time either of these two values change, we'll also have to setHasLoaded to false before we fetch the posts, so that
         // our loading spinner will be displayed to users.
         // and also add our query to the dependency array so that a new request is only made each time our user changes their search text
-    }, [filter, query, pathname]);
+    }, [filter, query, pathname, currentUser]);
 
     return (
         <Row className="h-100">

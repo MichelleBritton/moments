@@ -5,7 +5,14 @@ import styles from "../../styles/SignInUpForm.module.css";
 import btnStyles from "../../styles/Button.module.css";
 import appStyles from "../../App.module.css";
 
-import { Form, Button, Image, Col, Row, Container, Alert } from "react-bootstrap";
+import { Form } from "react-bootstrap";
+import { Button } from "react-bootstrap";
+import { Image } from "react-bootstrap";
+import { Col } from "react-bootstrap";
+import { Row } from "react-bootstrap";
+import { Container } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
+
 import axios from "axios";
 import { useRedirect } from "../../hooks/useRedirect";
 
